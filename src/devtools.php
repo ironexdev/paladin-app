@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 use Whoops\Handler\PrettyPageHandler;
 use Whoops\Run;

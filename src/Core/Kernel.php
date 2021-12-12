@@ -1,8 +1,7 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Paladin\Core;
 
-use Doctrine\ODM\MongoDB\DocumentManager;
 use Error;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
@@ -13,7 +12,6 @@ use Paladin\Enum\RequestHeaderEnum;
 use Paladin\Enum\RequestMethodEnum;
 use Paladin\Enum\ResponseHeaderEnum;
 use Paladin\Enum\ResponseStatusCodeEnum;
-use Paladin\Security\SecurityService;
 use Paladin\Security\SecurityServiceInterface;
 
 class Kernel
@@ -112,7 +110,7 @@ class Kernel
             $requestCsrfToken = $serverRequest->getHeaderLine(RequestHeaderEnum::X_CSRF_TOKEN);
 
             if (!$storedCsrfToken || !$requestCsrfToken || !$securityService->hashEquals($storedCsrfToken, $requestCsrfToken)) {
-                throw new Error("CSRF attack.", ResponseStatusCodeEnum::FORBIDDEN);
+                throw new Error("CSRF", ResponseStatusCodeEnum::FORBIDDEN);
             }
         }
     }

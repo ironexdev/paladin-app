@@ -7,6 +7,7 @@ use Paladin\Cache\FilesystemCache\FilesystemCacheFactory;
 use Paladin\Cache\FilesystemCache\FilesystemCacheFactoryInterface;
 use Paladin\Cache\RedisCache\RedisCacheFactory;
 use Paladin\Cache\RedisCache\RedisCacheFactoryInterface;
+use Paladin\Enum\ContentTypeEnum;
 use Psr\Container\ContainerInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\StreamFactoryInterface;
@@ -104,7 +105,9 @@ return [
 
             return new CurrentUserService($user);
         } else {
-            Cookie::unsetToken();
+            if (Cookie::getToken()) {
+                Cookie::unsetToken();
+            }
             return new CurrentUserService();
         }
     }),
@@ -159,7 +162,25 @@ return [
             $psr17Factory
         );
 
-        return $creator->fromGlobals();
+        $serverRequest = $creator->fromGlobals();
+
+        $contentType = $serverRequest->getHeaderLine("Content-Type");
+
+        // Parse request body, because Nyholm\Psr7Server doesn't parse JSON requests
+        if ($contentType === ContentTypeEnum::JSON) {
+            if (!$serverRequest->getParsedBody()) {
+                $content = $serverRequest->getBody()->getContents();
+                $data = json_decode($content, true);
+
+                if ($data === false || json_last_error() !== JSON_ERROR_NONE) {
+                    throw new InvalidArgumentException(json_last_error_msg() . " in body: '" . $content . "'");
+                }
+
+                $serverRequest = $serverRequest->withParsedBody($data);
+            }
+        }
+
+        return $serverRequest;
     }),
     StreamFactoryInterface::class => DI\create(Psr17Factory::class),
 

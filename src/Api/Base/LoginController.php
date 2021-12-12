@@ -1,10 +1,11 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Paladin\Api\Base;
 
 use Doctrine\ODM\MongoDB\DocumentManager;
 use Doctrine\ODM\MongoDB\MongoDBException;
 use Error;
+use GraphQL\Error\FormattedError;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use Paladin\Enum\ResponseStatusCodeEnum;
@@ -38,7 +39,7 @@ class LoginController extends AbstractController
         $requestBody = $request->getParsedBody();
         $email = $requestBody["email"] ?? null;
         $password = $requestBody["password"] ?? null;
-        $remember = isset($requestBody["remember"]) && $requestBody["remember"] === "true";
+        $remember = isset($requestBody["remember"]) && $requestBody["remember"] === true;
 
         // Invalid e-mail or password
         if (!$email || !$password) {

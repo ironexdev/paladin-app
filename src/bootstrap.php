@@ -1,5 +1,7 @@
-<?php
+<?php declare(strict_types=1);
 
+use Paladin\Core\ErrorResponse;
+use Paladin\Enum\ResponseStatusCodeEnum;
 use Psr\Log\LoggerInterface;
 use Paladin\Enum\EnvironmentEnum;
 use Paladin\Core\Kernel;
@@ -40,28 +42,46 @@ if ($_ENV["ENVIRONMENT"] === EnvironmentEnum::DEVELOPMENT) {
 try {
     $container->make(Kernel::class);
 } catch (Throwable $e) {
-    $errorCode = $e->getCode() ?: 500;
-    $logger = $container->get(LoggerInterface::class);
+    $errorCode = $e->getCode() ?: ResponseStatusCodeEnum::INTERNAL_SERVER_ERROR;
 
+    $logger = $container->get(LoggerInterface::class);
     $logger->error($e->getMessage(), $e->getTrace());
 
-    if ($_ENV["ENVIRONMENT"] === EnvironmentEnum::DEVELOPMENT) {
-        // Allow xhr debugging
-        header("Access-Control-Allow-Credentials: true");
-        header("Access-Control-Allow-Origin: " . $_ENV["CLIENT_URL"]);
-        header("Access-Control-Allow-Headers: X-CSRF-Token");
+    CORSHeaders();
 
-        if ($errorCode >= 400 && $errorCode < 500) {
-            http_response_code($errorCode);
-            echo $e->getMessage();
+    if ($_ENV["ENVIRONMENT"] === EnvironmentEnum::DEVELOPMENT) {
+        if ($errorCode >= ResponseStatusCodeEnum::BAD_REQUEST && $errorCode < ResponseStatusCodeEnum::INTERNAL_SERVER_ERROR) {
+            jsonError($errorCode, $e->getMessage());
         } else {
             throw $e;
         }
     } else {
-        if ($errorCode >= 400 && $errorCode < 500) {
-            http_response_code($errorCode);
+        if ($errorCode >= ResponseStatusCodeEnum::BAD_REQUEST && $errorCode < ResponseStatusCodeEnum::INTERNAL_SERVER_ERROR) {
+            jsonError($errorCode, $e->getMessage());
         } else {
-            http_response_code(500);
+            jsonError(ResponseStatusCodeEnum::INTERNAL_SERVER_ERROR);
         }
+    }
+}
+
+function CORSHeaders()
+{
+    header("Access-Control-Allow-Credentials: true");
+    header("Access-Control-Allow-Origin: " . $_ENV["CLIENT_URL"]);
+    header("Access-Control-Allow-Headers: X-CSRF-Token");
+}
+
+function jsonError(int $code, string $message = null)
+{
+    header("Content-Type: application/json");
+
+    http_response_code($code);
+
+    if ($message) {
+        echo json_encode([
+            "errors" => [
+                "message" => $message
+            ]
+        ]);
     }
 }

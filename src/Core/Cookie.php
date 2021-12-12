@@ -1,4 +1,4 @@
-<?php
+<?php declare(strict_types=1);
 
 namespace Paladin\Core;
 
@@ -39,6 +39,6 @@ class Cookie
 
     public static function unsetToken()
     {
-        setcookie(static::$token, null, -1, "/", "");
+        setcookie(static::$token, "", -1, "/", "");
     }
 }
